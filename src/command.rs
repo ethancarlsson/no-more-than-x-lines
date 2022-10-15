@@ -1,6 +1,7 @@
-pub fn read_diff() -> Result<String, String> {
+pub fn fetch_diff() -> Result<String, String> {
     let output = std::process::Command::new("git")
         .arg("diff")
+        .arg("--color-words")
         .output();
 
     match output {
