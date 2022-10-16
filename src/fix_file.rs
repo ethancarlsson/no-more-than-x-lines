@@ -31,18 +31,15 @@ impl FileFixer {
         let split_file = contents.split("\n").collect::<Vec<&str>>();
         let mut chunked_file: Vec<String> = Vec::new();
 
-        // let line_1 = split_file[0..3].join("\n");
         let mut prev_end = 0;
 
         for line in changed_lines {
-            println!("changing ({}, {})", line.0, line.1);
             let mut start = line.0 as usize - 1;
             let end = start + line.1 as usize;
 
             let mut untouched_lines = "".to_string();
 
             if prev_end < start {
-                println!("prev: {}, start: {}\n", prev_end, start);
                 untouched_lines = split_file[prev_end..start].join("\n");
                 start+=1
             }
@@ -50,9 +47,7 @@ impl FileFixer {
             let mut fixed_lines = split_file[start..end]
                 .join("\n");
 
-            if fixed_lines.contains(&self.string_to_fix) {
-                fixed_lines = fixed_lines.replace(&self.string_to_fix, &self.preferred_string)
-            }
+            fixed_lines = self.remove_unwanted_string(fixed_lines);
 
             if untouched_lines.len() > 0 {
                 chunked_file.push(untouched_lines + "\n" + &fixed_lines);
@@ -63,7 +58,19 @@ impl FileFixer {
             prev_end = end + 1
         }
 
+        println!("{}..{}\n", prev_end, split_file.len());
+        chunked_file.push(split_file[prev_end..split_file.len()].join("\n"));
+
         chunked_file.join("\n")
+    }
+
+    fn remove_unwanted_string(&self, fixed_lines: String) -> String {
+        if !fixed_lines.contains(&self.string_to_fix) {
+            return fixed_lines;
+        }
+        // keep looking in case the first time creates another case
+        // i.e. remove "\n\n" and replace with \n in "\n\n\n\n" ->  "\n\n" (need to recurse here)
+        return self.remove_unwanted_string(fixed_lines.replace(&self.string_to_fix, &self.preferred_string));
     }
 }
 

@@ -1,49 +1,105 @@
-use line::LineFinder;
+use std::fs;
 
-mod command;
-mod fix_file;
-mod line;
+use crate::line::LinesChanged;
 
-fn main() {
-    let string_to_find = "\n\n\n";
-    let line_finder = LineFinder {
-        string_to_find: string_to_find.to_string(),
-    };
-
-    let files_with_invalid_string = match command::fetch_diff() {
-        Ok(ok) => line_finder.get_changed_lines_per_file(ok),
-        Err(e) => {
-            println!("{}", e);
-            return;
-    };
-
-    // let stringed_invalids = match files_with_invalid_string {
-    //     Ok(lines_changed) => lines_changed
-    //         .iter()
-    //         .map(|f| f.to_string())
-    //         .collect::<Vec<String>>()
-    //         .join("\n"),
-    //     Err(e) => {
-    //         println!("{}", e);
-    //         return;
-    //     }
-    // };
-    //
-    // println!("{}", stringed_invalids);
-
-    match files_with_invalid_string {
-        Ok(lines_changed) => {
-            let file_fixer =
-                fix_file::new_file_fixer(string_to_find.to_string(), "\n\n".to_string());
-
-            for invalid_file in lines_changed {
-                file_fixer.replace_unwanted_strings(invalid_file);
-            }
-        }
-        Err(e) => {
-            println!("{}", e);
-            return;
-        }
-    };
-
+pub struct FileFixer {
+    string_to_fix: String,
+    preferred_string: String,
 }
+
+pub fn new_file_fixer(string_to_fix: String, preferred_string: String) -> FileFixer {
+    FileFixer {
+        string_to_fix,
+        preferred_string,
+    }
+}
+
+impl FileFixer {
+    pub fn replace_unwanted_strings(&self, changed_lines: LinesChanged) {
+        let contents =
+            fs::read_to_string(changed_lines.get_file_path()).expect("unable to read file at");
+
+        let fixed_src = self.fix_src(contents, changed_lines.get_lines());
+
+        match fs::write("testing.rs", fixed_src) {
+            Ok(_) => println!("fixed file, {}", changed_lines.get_file_path()),
+            Err(e) => println!("file fixing failed\n{}", e),
+        };
+    }
+
+    pub fn fix_src(&self, contents: String, changed_lines: Vec<(u32, u32)>) -> String {
+        let mut chunked_file: Vec<String> = Vec::new();
+
+        let mut prev_end = 0;
+
+        for line in changed_lines {
+            let mut start = line.0 as usize - 1;
+            let end = start + line.1 as usize;
+
+            let mut untouched_lines = "".to_string();
+
+            if prev_end < start {
+                untouched_lines = split_file[prev_end..start].join("\n");
+                start+=1
+            }
+            let mut fixed_lines = split_file[start..end]
+                .join("\n");
+
+            fixed_lines = self.remove_unwanted_string(fixed_lines);
+
+            if untouched_lines.len() > 0 {
+                chunked_file.push(untouched_lines + "\n" + &fixed_lines);
+                chunked_file.push(fixed_lines)
+            }
+
+        }
+
+        println!("{}..{}\n", prev_end, split_file.len());
+        chunked_file.push(split_file[prev_end..split_file.len()].join("\n"));
+
+        chunked_file.join("\n")
+    }
+
+    fn remove_unwanted_string(&self, fixed_lines: String) -> String {
+        if !fixed_lines.contains(&self.string_to_fix) {
+            return fixed_lines;
+        }
+        // keep looking in case the first time creates another case
+        // i.e. remove "\n\n" and replace with \n in "\n\n\n\n" ->  "\n\n" (need to recurse here)
+        return self.remove_unwanted_string(fixed_lines.replace(&self.string_to_fix, &self.preferred_string));
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::fix_file::FileFixer;
+
+    #[test]
+    fn test_file_fixer() {
+        let input_src = r#" 
+
+vim.cmd("set nowrap")
+
+"#
+        .to_string();
+
+        let input_lines_to_change: Vec<(u32, u32)> = vec![(1, 5)];
+
+        let file_fixer = FileFixer {
+            string_to_fix: "\n\n\n".to_string(),
+            preferred_string: "\n\n".to_string(),
+        };
+
+        let expected = r#"
+
+vim.cmd("set nowrap")
+
+"#
+        .to_string();
+
+        assert_eq!(
+            file_fixer.fix_src(input_src, input_lines_to_change),
+            expected
+        );
+    }
+}
+
