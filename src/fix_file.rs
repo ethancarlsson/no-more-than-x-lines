@@ -75,8 +75,6 @@ impl FileFixer {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use crate::fix_file::FileFixer;
@@ -84,6 +82,7 @@ mod tests {
     #[test]
     fn test_file_fixer() {
         let input_src = r#"vim.cmd("set nowrap")
+
 
 "# // 3 * \n
         .to_string();
