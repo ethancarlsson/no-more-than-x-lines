@@ -21,14 +21,15 @@ impl FileFixer {
 
         let fixed_src = self.fix_src(contents, changed_lines.get_lines());
 
-        match fs::write(changed_lines.get_file_path(), fixed_src) {
+        match fs::write("testing.rs", fixed_src) {
             Ok(_) => println!("fixed file: {}", changed_lines.get_file_path()),
             Err(e) => println!("file fixing failed\n{}", e),
         };
     }
 
+
     pub fn fix_src(&self, contents: String, changed_lines: Vec<(u32, u32)>) -> String {
-        let split_file = contents.split("\n").collect::<Vec<&str>>();
+        let split_file = contents.split_inclusive("\n").collect::<Vec<&str>>();
         let mut chunked_file: Vec<String> = Vec::new();
 
         let mut prev_end = 0;
@@ -40,27 +41,21 @@ impl FileFixer {
             let mut untouched_lines = "".to_string();
 
             if prev_end < start {
-                untouched_lines = split_file[prev_end..start].join("\n");
+                untouched_lines = split_file[prev_end..start].join("");
             }
 
-            let mut fixed_lines = split_file[start..end].join("\n");
+            let mut fixed_lines = split_file[start..end].join("");
 
             fixed_lines = self.remove_unwanted_string(fixed_lines);
 
-            if untouched_lines.len() > 0 {
-                chunked_file.push(untouched_lines + "\n" + &fixed_lines);
-            } else {
-                chunked_file.push(fixed_lines)
-            }
+            chunked_file.push(untouched_lines + &fixed_lines);
 
             prev_end = end
         }
 
-        if prev_end < split_file.len() {
-            chunked_file.push(split_file[prev_end..split_file.len() - 1].join("\n"));
-        }
+        chunked_file.push(split_file[prev_end..split_file.len()].join(""));
 
-        chunked_file.join("\n")
+        chunked_file.join("")
     }
 
     fn remove_unwanted_string(&self, fixed_lines: String) -> String {
@@ -87,7 +82,7 @@ mod tests {
 "# // 3 * \n
         .to_string();
 
-        let input_lines_to_change: Vec<(u32, u32)> = vec![(1, 5)];
+        let input_lines_to_change: Vec<(u32, u32)> = vec![(1, 4)];
 
         let file_fixer = FileFixer {
             string_to_fix: "\n\n\n".to_string(),
