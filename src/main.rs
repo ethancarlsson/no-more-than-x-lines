@@ -2,10 +2,13 @@ use line::LineFinder;
 
 mod command;
 mod line;
+mod fix_file;
 
 fn main() {
+    let string_to_find = "\n\n\n";
+
     let line_finder = LineFinder {
-        string_to_find: "\n\n\n".to_string(),
+        string_to_find: string_to_find.to_string(),
     };
 
     let files_with_invalid_string = match command::fetch_diff() {
@@ -27,6 +30,9 @@ fn main() {
             return;
         }
     };
+
+    let _file_fixer = fix_file::new_file_fixer(string_to_find.to_string(), "\n\n".to_string());
+
 
     println!("{}", stringed_invalids)
 }

@@ -1,17 +1,30 @@
+use regex::Regex;
+
 #[derive(Debug, PartialEq)]
 pub struct LinesChanged {
     file: String,
-    from: u32,
-    to: u32,
+    ln_num_range: Vec<(u32, u32)>,
 }
 
 impl LinesChanged {
+
+    pub fn get_file_path(&self) -> String {
+        self.file.clone()
+    }
+
+    pub fn get_lines(&self) -> Vec<(u32, u32)> {
+        self.ln_num_range.clone()
+    }
+
     pub fn to_string(&self) -> String {
         format!(
-            "{} {}-{}",
+            "{}─────┐\n\t\t|{}",
             self.file,
-            self.from.to_string(),
-            self.to.to_string()
+            self.ln_num_range
+                .iter()
+                .map(|(from, to)| { return format!("{}-{}", from, to) })
+                .collect::<Vec<String>>()
+                .join("\n\t\t|"),
         )
     }
 }
@@ -48,51 +61,53 @@ fn lines_changed_from_diff(s: &str) -> Result<LinesChanged, String> {
         Err(value) => return Err(value.to_string()),
     };
 
-    advance_iter_by(&mut split_string, 3);
+    let mut from_to_vec = Vec::new();
 
-    let line = split_string.next();
-    let (from, to) = match get_from_to(line) {
-        Ok(value) => value,
-        Err(value) => return Err(value),
-    };
+    let re = Regex::new(r"@@ \-\d+,\d+ \+\d+,\d+ @@").unwrap();
+
+    for line in split_string {
+        if !re.is_match(line) {
+            continue;
+        }
+
+        println!("{}", line);
+        let from_to = match get_from_to(line) {
+            Ok(value) => value,
+            Err(value) => return Err(value),
+        };
+        from_to_vec.push(from_to)
+    }
 
     Ok(LinesChanged {
         file: file_name,
-        from,
-        to,
+        ln_num_range: from_to_vec,
     })
 }
 
-fn get_from_to(line: Option<&str>) -> Result<(u32, u32), String> {
-    let (from, to) = match line {
-        Some(l) => {
-            let sub_l = match get_changed_line_numbers(l) {
-                Ok(value) => value,
-                Err(value) => return Err(value),
-            };
-            let mut split_line_nums = sub_l.split(",");
-
-            let from_str = split_line_nums.next().or(Some("0"));
-            let to_str = split_line_nums.next().or(Some("0"));
-
-            let from = from_str.unwrap().trim().parse::<u32>();
-            let to = to_str.unwrap().trim().parse::<u32>();
-
-            let from_n = match from {
-                Ok(k) => k,
-                Err(e) => return Err(e.to_string()),
-            };
-
-            let to_n = match to {
-                Ok(k) => k,
-                Err(e) => return Err(e.to_string()),
-            };
-
-            (from_n, to_n)
-        }
-        None => (0, 0),
+fn get_from_to(line: &str) -> Result<(u32, u32), String> {
+    let sub_l = match get_changed_line_numbers(line) {
+        Ok(value) => value,
+        Err(value) => return Err(value),
     };
-    Ok((from, to))
+    let mut split_line_nums = sub_l.split(",");
+
+    let from_str = split_line_nums.next().or(Some("0"));
+    let to_str = split_line_nums.next().or(Some("0"));
+
+    let from = from_str.unwrap().trim().parse::<u32>();
+    let to = to_str.unwrap().trim().parse::<u32>();
+
+    let from_n = match from {
+        Ok(k) => k,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    let to_n = match to {
+        Ok(k) => k,
+        Err(e) => return Err(e.to_string()),
+    };
+
+    Ok((from_n, to_n))
 }
 
 // harduken
@@ -114,12 +129,6 @@ fn get_changed_line_numbers(l: &str) -> Result<String, String> {
         }
         None => return Err(format!("no changed lines in changed file {}", l)),
     };
-}
-
-fn advance_iter_by(split_string: &mut std::str::Split<&str>, n: u32) {
-    for _ in 0..n {
-        split_string.next();
-    }
 }
 
 fn get_file_name(file_name_line: Option<&str>) -> Result<String, &str> {
@@ -160,9 +169,9 @@ vim.cmd("set shiftwidth=8")
 "#;
         let expected = LinesChanged {
             file: "init.lua".to_string(),
-            from: 7,
-            to: 30,
+            ln_num_range: [(7, 30)].to_vec(),
         };
+
 
         assert_eq!(lines_changed_from_diff(input).unwrap(), expected);
     }
