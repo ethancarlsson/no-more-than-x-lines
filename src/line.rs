@@ -16,6 +16,7 @@ impl LinesChanged {
         self.ln_num_range.clone()
     }
 
+    #[allow(dead_code)]
     pub fn to_string(&self) -> String {
         format!(
             "{}─────┐\n\t\t|{}",

@@ -19,20 +19,6 @@ fn main() {
         }
     };
 
-    // let stringed_invalids = match files_with_invalid_string {
-    //     Ok(lines_changed) => lines_changed
-    //         .iter()
-    //         .map(|f| f.to_string())
-    //         .collect::<Vec<String>>()
-    //         .join("\n"),
-    //     Err(e) => {
-    //         println!("{}", e);
-    //         return;
-    //     }
-    // };
-    //
-    // println!("{}", stringed_invalids);
-
     match files_with_invalid_string {
         Ok(lines_changed) => {
             let file_fixer =

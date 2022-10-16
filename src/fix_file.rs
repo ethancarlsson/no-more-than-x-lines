@@ -21,7 +21,7 @@ impl FileFixer {
 
         let fixed_src = self.fix_src(contents, changed_lines.get_lines());
 
-        match fs::write("testing.rs", fixed_src) {
+        match fs::write(changed_lines.get_file_path(), fixed_src) {
             Ok(_) => println!("fixed file, {}", changed_lines.get_file_path()),
             Err(e) => println!("file fixing failed\n{}", e),
         };
@@ -34,9 +34,8 @@ impl FileFixer {
         let mut prev_end = 0;
 
         for line in changed_lines {
-            let start = (line.0 ) as usize;
-            let end = start + (line.1 ) as usize;
-            println!("matching {}..{}..{}\n", prev_end, start, end);
+            let start = (line.0 - 1) as usize;
+            let end = start + (line.1 - 1) as usize;
 
             let mut untouched_lines = "".to_string();
 
@@ -57,8 +56,8 @@ impl FileFixer {
             prev_end = end
         }
 
-        if prev_end != split_file.len() {
-            chunked_file.push(split_file[prev_end..split_file.len()].join("\n"));
+        if prev_end < split_file.len() {
+            chunked_file.push(split_file[prev_end..split_file.len() - 1].join("\n"));
         }
 
         chunked_file.join("\n")
@@ -76,18 +75,17 @@ impl FileFixer {
     }
 }
 
+
+
 #[cfg(test)]
 mod tests {
     use crate::fix_file::FileFixer;
 
     #[test]
     fn test_file_fixer() {
-        let input_src = r#" 
+        let input_src = r#"vim.cmd("set nowrap")
 
-vim.cmd("set nowrap")
-
-
-"#
+"# // 3 * \n
         .to_string();
 
         let input_lines_to_change: Vec<(u32, u32)> = vec![(1, 5)];
@@ -97,11 +95,9 @@ vim.cmd("set nowrap")
             preferred_string: "\n\n".to_string(),
         };
 
-        let expected = r#"
+        let expected = r#"vim.cmd("set nowrap")
 
-vim.cmd("set nowrap")
-
-"#
+"# // 2 * \n
         .to_string();
 
         assert_eq!(
