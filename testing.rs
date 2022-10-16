@@ -6,7 +6,6 @@ mod line;
 
 fn main() {
     let string_to_find = "\n\n\n";
-
     let line_finder = LineFinder {
         string_to_find: string_to_find.to_string(),
     };
@@ -16,7 +15,6 @@ fn main() {
         Err(e) => {
             println!("{}", e);
             return;
-        }
     };
 
     // let stringed_invalids = match files_with_invalid_string {

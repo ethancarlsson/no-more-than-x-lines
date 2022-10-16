@@ -70,7 +70,6 @@ fn lines_changed_from_diff(s: &str) -> Result<LinesChanged, String> {
             continue;
         }
 
-        println!("{}", line);
         let from_to = match get_from_to(line) {
             Ok(value) => value,
             Err(value) => return Err(value),
