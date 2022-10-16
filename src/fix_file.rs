@@ -22,7 +22,7 @@ impl FileFixer {
         let fixed_src = self.fix_src(contents, changed_lines.get_lines());
 
         match fs::write(changed_lines.get_file_path(), fixed_src) {
-            Ok(_) => println!("fixed file, {}", changed_lines.get_file_path()),
+            Ok(_) => println!("fixed file: {}", changed_lines.get_file_path()),
             Err(e) => println!("file fixing failed\n{}", e),
         };
     }
