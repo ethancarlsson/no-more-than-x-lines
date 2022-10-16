@@ -34,18 +34,17 @@ impl FileFixer {
         let mut prev_end = 0;
 
         for line in changed_lines {
-            let mut start = line.0 as usize - 1;
-            let end = start + line.1 as usize;
+            let start = (line.0 ) as usize;
+            let end = start + (line.1 ) as usize;
+            println!("matching {}..{}..{}\n", prev_end, start, end);
 
             let mut untouched_lines = "".to_string();
 
             if prev_end < start {
                 untouched_lines = split_file[prev_end..start].join("\n");
-                start+=1
             }
 
-            let mut fixed_lines = split_file[start..end]
-                .join("\n");
+            let mut fixed_lines = split_file[start..end].join("\n");
 
             fixed_lines = self.remove_unwanted_string(fixed_lines);
 
@@ -55,11 +54,12 @@ impl FileFixer {
                 chunked_file.push(fixed_lines)
             }
 
-            prev_end = end + 1
+            prev_end = end
         }
 
-        println!("{}..{}\n", prev_end, split_file.len());
-        chunked_file.push(split_file[prev_end..split_file.len()].join("\n"));
+        if prev_end != split_file.len() {
+            chunked_file.push(split_file[prev_end..split_file.len()].join("\n"));
+        }
 
         chunked_file.join("\n")
     }
@@ -70,20 +70,11 @@ impl FileFixer {
         }
         // keep looking in case the first time creates another case
         // i.e. remove "\n\n" and replace with \n in "\n\n\n\n" ->  "\n\n" (need to recurse here)
-        return self.remove_unwanted_string(fixed_lines.replace(&self.string_to_fix, &self.preferred_string));
+        return self.remove_unwanted_string(
+            fixed_lines.replace(&self.string_to_fix, &self.preferred_string),
+        );
     }
 }
-
-
-
-
-
-
-
-
-
-
-
 
 #[cfg(test)]
 mod tests {
