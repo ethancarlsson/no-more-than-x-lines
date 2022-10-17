@@ -35,7 +35,8 @@ pub struct LineFinder {
 }
 
 impl LineFinder {
-    pub fn get_changed_lines_per_file(&self, diff: String) -> Result<Vec<LinesChanged>, String> {
+
+    pub fn get_changed_lines_matching_string(&self, diff: String) -> Result<Vec<LinesChanged>, String> {
         self.get_files_with_extra_lines(diff)
     }
 

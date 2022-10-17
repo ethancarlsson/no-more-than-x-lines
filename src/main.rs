@@ -1,11 +1,11 @@
 use std::env;
-
 use line::LineFinder;
 use regex::Regex;
 
 mod command;
 mod fix_file;
 mod line;
+pub mod rules;
 
 fn main() {
     let allowed_consecutive_lines = get_allowed_lines();
@@ -16,14 +16,18 @@ fn main() {
         string_to_find: string_to_find.clone(),
     };
 
+    apply_lines_rule(line_finder, string_to_find, allowed_consecutive_lines);
+    // rules::PSR7_no_line_before_class_close::find_infraction()
+}
+
+fn apply_lines_rule(line_finder: LineFinder, string_to_find: String, allowed_consecutive_lines: String) {
     let files_with_invalid_string = match command::fetch_diff() {
-        Ok(ok) => line_finder.get_changed_lines_per_file(ok),
+        Ok(ok) => line_finder.get_changed_lines_matching_string(ok),
         Err(e) => {
             println!("{}", e);
             return;
         }
     };
-
     match files_with_invalid_string {
         Ok(lines_changed) => {
             let file_fixer =
